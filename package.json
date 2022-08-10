@@ -1,0 +1,39 @@
+{
+        "name": "amazy-spec",
+        "version": "0.0.1",
+        "main": "dist/main.js",
+        "type": "module",
+        "module": {
+                "preloaders": [
+                        {
+                                "test": "/*.js/",
+                                "loader": "import-glob"
+                        }
+                ]
+        },
+        "scripts": {
+                "build": "tsc --build --pretty",
+                "start-server": "node dist/main.js"
+        },
+        "dependencies": {
+                "@types/download": "^8.0.1",
+                "@types/events": "^3.0.0",
+                "@types/mime-types": "^2.1.1",
+                "aloedb-node": "^1.0.2",
+                "axios": "^0.27.2",
+                "chalk": "^5.0.1",
+                "cheerio": "^1.0.0-rc.11",
+                "crypto": "^1.0.1",
+                "download": "^8.0.0",
+                "events": "^3.3.0",
+                "mime-types": "^2.1.35",
+                "multi-progress-bars": "^4.2.3",
+                "superstruct": "^0.15.4",
+                "telegraf": "^4.8.6",
+                "ts-command-line-args": "^2.3.1",
+                "typescript": "^4.7.2"
+        },
+        "config": {
+                "puppeteer_skip_chromium_download": true
+        }
+}
