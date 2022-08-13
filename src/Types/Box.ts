@@ -1,4 +1,4 @@
-import { MarketItem } from "./MarketItem.js"
+import { MarketItem } from "./Market.js"
 
 export interface Box extends MarketItem {
         primaryProperties: {

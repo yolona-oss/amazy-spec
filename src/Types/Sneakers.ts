@@ -1,4 +1,24 @@
-import { MarketItem } from "./MarketItem.js"
+import { MarketItem } from "./Market.js"
+
+type SneakersName = "Common Ranger Sneakers" |
+        "Common Hiker Sneakers" |
+        "Common Coacher Sneakers" |
+        "Common Sprinter Sneakers" |
+
+        "Uncommon Ranger Sneakers" |
+        "Uncommon Hiker Sneakers" |
+        "Uncommon Coacher Sneakers" |
+        "Uncommon Sprinter Sneakers" |
+
+        "Rare Ranger Sneakers" |
+        "Rare Hiker Sneakers" |
+        "Rare Coacher Sneakers" |
+        "Rare Sprinter Sneakers" |
+
+        "Legendary Ranger Sneakers" |
+        "Legendary Hiker Sneakers" |
+        "Legendary Coacher Sneakers" |
+        "Legendary Sprinter Sneakers"
 
 export interface Sneakers extends MarketItem {
         baseProperties: {
@@ -7,7 +27,7 @@ export interface Sneakers extends MarketItem {
                 Joy: number
                 Durability: number
         }
-        primaryProperties {
+        primaryProperties: {
                 Rarity: "Common" | "Uncomon" | "Rare" | "Legendary"
                 Types: "Ranger" | "Hiker" | "Coacher" | "Sprinter"
                 Performance: number
@@ -20,23 +40,5 @@ export interface Sneakers extends MarketItem {
                 Parents: number[]
         }
         Types: "sneakers"
-        name: "Common Ranger Sneakers" |
-                "Common Hiker Sneakers" |
-                "Common Coacher Sneakers" |
-                "Common Sprinter Sneakers" |
-
-                "Uncommon Ranger Sneakers" |
-                "Uncommon Hiker Sneakers" |
-                "Uncommon Coacher Sneakers" |
-                "Uncommon Sprinter Sneakers" |
-
-                "Rare Ranger Sneakers" |
-                "Rare Hiker Sneakers" |
-                "Rare Coacher Sneakers" |
-                "Rare Sprinter Sneakers" |
-
-                "Legendary Ranger Sneakers" |
-                "Legendary Hiker Sneakers" |
-                "Legendary Coacher Sneakers" |
-                "Legendary Sprinter Sneakers"
+        name: SneakersName
 }

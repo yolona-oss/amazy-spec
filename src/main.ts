@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import { dirname } from 'path'
-import { BotService } from './BotService.js'
+import { BotService } from './Services.js'
 import { Config } from './Config.js'
 
 const lockFilePath = "./.lock.pid";

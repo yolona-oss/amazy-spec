@@ -3,6 +3,7 @@ import { MarketSearchParams, MarketSearchRes } from "./../Types/Market.js"
 import * as bnb from "@binance-chain/javascript-sdk"
 const bnbClient = new bnb.BncClient("https://bnbapi.net/api")
 
+
 export class MarketApi {
         private contract?: string
 
@@ -11,36 +12,16 @@ export class MarketApi {
 
         }
 
-        connectedWallet() {
-                return bnbClient.getPrivateKey()
-        }
-
         async initBnb(contractAddress: string, privateKey?: string) {
-                this.contract = contractAddress
-                bnbClient.chooseNetwork("mainnet")
-                if (privateKey) bnbClient.setPrivateKey(privateKey)
-                await bnbClient.initChain()
+
         }
 
-        async setWallet(privateKey: string): Promise<boolean> {
-                try {
-                        let res = await bnbClient.setPrivateKey(privateKey)
-                        if (res.getPrivateKey()) {
-                                return true
-                        }
-                } catch(e) {
-                        return false
-                }
-                return false
+        async setWallet(privateKey: string) {
+                bnbClient()
         }
-
 
         async createSellOrder(asset: number): Promise<boolean> {
-                let tx = new bnb.Transaction({
-                        data: {
-                                _id: asset
-                        }
-                })
+                asset
                 bnbClient.sendTransaction(, true)
                 return true
         }

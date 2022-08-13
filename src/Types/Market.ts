@@ -1,3 +1,16 @@
+export interface MarketSearchParams {
+        levelMax: number
+        levelMin: number
+        mintMax:  number
+        mintMin:  number
+        page:     number
+        perPage:  number
+        type:     string | "sneakers" | "box"
+        rarity:   string | "common" | "uncommon" | "rare" | "legendary"
+        valueMax: number
+        valueMin: number
+}
+
 export interface MarketItem {
         primaryProperties: {
                 Rarity: "Common" | "Uncomon" | "Rare" | "Legendary"
@@ -44,4 +57,11 @@ export interface MarketItem {
         currency: "BNB" | "ETH"
         price: number
         sellId: number
+}
+
+export interface MarketSearchRes {
+        sales: MarketItem[]
+        my: MarketItem[],
+        salesTotal: number
+        myCount: number
 }
