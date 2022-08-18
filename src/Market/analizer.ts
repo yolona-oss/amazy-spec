@@ -11,10 +11,7 @@ export interface AnalizerInterface {
 }
 
 export class FloorAnalizer implements AnalizerInterface {
-        private _curStepItems: {item: MarketItem, score: number}[]
-
-        constructor(private api: MarketApi) {
-                this._curStepItems = new Array()
+        constructor(private api: MarketApi = new MarketApi()) {
         }
 
         buildIt(a: number) {
@@ -32,7 +29,7 @@ export class FloorAnalizer implements AnalizerInterface {
         }
 
         async analize() {
-                this._curStepItems = new Array()
+                let items = new Array()
 
                 const sneakers = (await this.api.fetchNFT({
                         type: "sneakers"
@@ -42,7 +39,7 @@ export class FloorAnalizer implements AnalizerInterface {
                 })).sales
 
                 for (const i of sneakers.concat(box)) {
-                        this._curStepItems.push({
+                        items.push({
                                 item: i,
                                 score: (
                                         i.Types == "box" ?
@@ -51,7 +48,7 @@ export class FloorAnalizer implements AnalizerInterface {
                         })
                 }
 
-                return this._curStepItems
+                return items
         }
 }
 

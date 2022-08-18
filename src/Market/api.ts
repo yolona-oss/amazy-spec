@@ -7,7 +7,7 @@ export class MarketApi {
         private contract?: string
 
         // https://rest.amazy.io/marketplace/?levelMax=&levelMin=&mintMax=&mintMin=&page=1&perPage=12&type=sneakers&valueMax=&valueMin=
-        constructor(private api_url: string) {
+        constructor(private api_url: URL = new URL("https://rest.amazy.io/marketplace")) {
 
         }
 
@@ -35,18 +35,17 @@ export class MarketApi {
         }
 
 
-        async createSellOrder(asset: number): Promise<boolean> {
-                let tx = new bnb.Transaction({
-                        data: {
-                                _id: asset
-                        }
-                })
-                bnbClient.sendTransaction(, true)
-                return true
-        }
+        // async createSellOrder(asset: number, price: number): Promise<boolean> {
+        //         let tx = new bnb.Transaction({
+        //                 data: {
+        //                         _id: asset
+        //                 }
+        //         })
+        //         bnbClient.sendTransaction(, true)
+        //         return true
+        // }
 
-        async createBuyOrder(asset: number, price: number) {
-                price
+        async createBuyOrder(asset: number) {
                 asset
         }
 
@@ -69,7 +68,7 @@ export class MarketApi {
                 }
                 let res
                 try {
-                        res = await axios.get(this.api_url, {
+                        res = await axios.get(this.api_url.toString(), {
                                 data: param
                         })
                 } catch (e) {

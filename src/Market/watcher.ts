@@ -1,14 +1,31 @@
 import { EventEmitter } from 'events'
 import { MarketWatcherOpts, Watcher } from './../Types/Watcher.js'
-import { AnalizerInterface } from './analizer.js'
+import { FloorAnalizer, AnalizerInterface } from './analizer.js'
 import { sleep } from './../lib/time.js'
+
+const defaultMarketWatcherOpts = {
+        wallet: {
+                phrases: [],
+                keyPair: {
+                        privateKey: "",
+                        publicKey: ""
+                }
+        },
+        autoSell: false,
+        autoBuy: false,
+        argession: 0.5,
+        freq: 1
+}
 
 export class MarketWatcher extends EventEmitter implements Watcher {
         private terminated: boolean
         private sleepTime: number
         private onIteration: boolean
 
-        constructor(private opts: MarketWatcherOpts, private analizer: AnalizerInterface) {
+        constructor(
+                private opts: MarketWatcherOpts = defaultMarketWatcherOpts,
+                private analizer: AnalizerInterface = new FloorAnalizer()
+        ) {
                 super()
                 this.terminated = true
                 this.onIteration = false

@@ -73,14 +73,12 @@ const commands = (()=> {
         let setautobuy = <Command>async function(this: BotService, ctx: TextContext) {
                 // TODO
 
-                ctx.reply("Not impl")
-                return
                 let data = "";
                 if (ctx.message && ctx.message.text) {
                         data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
                 }
                 if (data !== "") {
-                        await ctx.manager.setName(data);
+                        this.setAutoBuy(data == "true" ? true : false)
                 } else {
                         ctx.reply(new Error('data passed').message);
                 }
@@ -147,11 +145,14 @@ const commands = (()=> {
         let setwatcherfreq = <Command>async function(this: BotService, ctx: TextContext) {
                 // TODO
 
-                ctx.reply("Not impl")
-                return
                 let data = "";
                 if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
+                        data = String(ctx.message.text.slice('setwatcherfreq'.length+2)).trim();
+                        if (Number(data) > 0) {
+
+                        } else {
+                                ctx.reply(new Error('Its not number or number is below zero').message);
+                        }
                 }
                 if (data !== "") {
                         await ctx.manager.setName(data);
@@ -243,11 +244,12 @@ const commands = (()=> {
         let setanalizer = <Command>async function(this: BotService, ctx: TextContext) {
                 let data = "";
                 if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
+                        data = String(ctx.message.text.slice('setanalizer'.length+2)).trim();
                 }
                 if (data !== "") {
                         if (ANALIZERS.has(data)) {
-                                this.azyApi.
+                                // @ts-ignore
+                                this.watcher.changeAnalizer(ANALIZERS.get(data))
                         } else {
                                 await ctx.reply("Such analizers not exists")
                         }
@@ -257,9 +259,15 @@ const commands = (()=> {
         }
 
         let listanalizers = <Command>async function(this: BotService, ctx: TextContext) {
+                let str = ""
+                for (const a of ANALIZERS.keys()) {
+                        str += "\n- " + a
+                }
+                ctx.reply("Avalible analizers:"+str)
         }
 
         let currentanalizer = <Command>async function(this: BotService, ctx: TextContext) {
+                ctx.reply("Not impl")
         }
 
         let mynft = <Command>async function(this: BotService, ctx: TextContext) {
@@ -295,9 +303,11 @@ const commands = (()=> {
         }
 
         let toggle = <Command>async function(this: BotService, ctx: TextContext) {
+                ctx.reply("Not impl")
         }
 
         let isactive = <Command>async function(this: BotService, ctx: TextContext) {
+                ctx.reply("Not impl, always active")
         }
 
         status.description = "get current status";
@@ -476,7 +486,7 @@ const csAction = (() => {
 })()
 
 class WatcherController extends EventEmitter {
-        private watcher?: MarketWatcher
+        private watcher: MarketWatcher
 
         constructor() {
                 super()
@@ -487,11 +497,15 @@ class WatcherController extends EventEmitter {
         }
 
         async listen() {
-                this.watcher?.start()
+                this.watcher.start()
         }
 
         async setWallet(key: string) {
-                await this.watcher?.setWallet(key)
+                await this.watcher.setWallet(key)
+        }
+
+        async changeAnalizer(analizer: AnalizerInterface) {
+                await this.watcher.changeAnalizer(analizer)
         }
 }
 
@@ -500,11 +514,23 @@ class WatcherController extends EventEmitter {
 export class BotService extends EventEmitter {
         public readonly bot: tg.Telegraf<Context>;
         readonly azyApi: MarketApi;
-        watcher?: MarketWatcher
+        watcher: WatcherController
 
         private running: boolean = false;
 
         public onStop: () => void = () => {}
+
+        public buyFunction: (id: number) => Promise<void> = async (id) => { id }
+
+        private async autoBuyF(id: number) {
+                await this.azyApi.createBuyOrder(id)
+        }
+
+        private async notifyBuyF(id: number) {
+                for (const manager of Database.managers.documents) {
+                        await this.bot.telegram.sendMessage(manager.userId, "Found buy order: https://go.amazy.io/item/"+id)
+                }
+        }
 
         private readonly stickers = {
             welcoming: "CAACAgIAAxkBAAEEh85iYatAqlMz81qfn7Dk303ummYrjwACGBEAAvE40EoZjSpXJ-H1-CQE",
@@ -516,8 +542,13 @@ export class BotService extends EventEmitter {
 
         constructor() {
                 super();
-                this.azyApi = new MarketApi("https://rest.amazy.io/marketplace")
+                this.azyApi = new MarketApi()
                 this.bot = new tg.Telegraf(Config().bot.token);
+                this.watcher = new WatcherController()
+
+                this.watcher.on("buy", async (id: number) => {
+                        await this.buyFunction(id)
+                })
 
                 this.bot.use(async (ctx, next) => {
                         let mngr = await Manager.findOne({ userId: ctx.from!.id })
@@ -548,6 +579,14 @@ export class BotService extends EventEmitter {
         }
 
         deconstructor() {
+        }
+
+        setAutoBuy(auto: boolean) {
+                if (auto) {
+                        this.buyFunction = this.autoBuyF
+                } else {
+                        this.buyFunction = this.notifyBuyF
+                }
         }
 
         async start() {
