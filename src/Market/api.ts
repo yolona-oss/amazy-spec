@@ -1,12 +1,19 @@
 import axios from 'axios'
 import { MarketSearchParams, MarketSearchRes } from "./../Types/Market.js"
 import * as bnb from "@binance-chain/javascript-sdk"
+import _web3 from 'web3'
 const bnbClient = new bnb.BncClient("https://bnbapi.net/api")
+
+const bsc_rpc = "https://bsc-dataseed.binance.org/"
+const web3 = new _web3(
+        new _web3.providers.HttpProvider(bsc_rpc)
+)
+const amazy_contract_address = web3.utils.toChecksumAddress('0x70624F31d403b5a5505b9127663674fc1195C383')
+const method_buy = '0xd96a094a'
 
 export class MarketApi {
         private contract?: string
 
-        // https://rest.amazy.io/marketplace/?levelMax=&levelMin=&mintMax=&mintMin=&page=1&perPage=12&type=sneakers&valueMax=&valueMin=
         constructor(private api_url: URL = new URL("https://rest.amazy.io/marketplace")) {
 
         }
@@ -24,29 +31,25 @@ export class MarketApi {
 
         async setWallet(privateKey: string): Promise<boolean> {
                 try {
-                        let res = await bnbClient.setPrivateKey(privateKey)
-                        if (res.getPrivateKey()) {
-                                return true
-                        }
+                        web3.eth.accounts.privateKeyToAccount(privateKey)
                 } catch(e) {
                         return false
                 }
-                return false
+                return true
         }
 
 
         // async createSellOrder(asset: number, price: number): Promise<boolean> {
-        //         let tx = new bnb.Transaction({
-        //                 data: {
-        //                         _id: asset
-        //                 }
-        //         })
-        //         bnbClient.sendTransaction(, true)
+        //         const hex_sale_id = asset.toString(16).slice(2)
+        //         let order_data = `${method_buy}${hex_sale_id}`
         //         return true
         // }
 
         async createBuyOrder(asset: number) {
-                asset
+                const hex_sale_id = asset.toString(16).slice(2)
+                let order_data = `${method_buy}${hex_sale_id}`
+
+                return true
         }
 
         async fetchNFT(_param: Partial<MarketSearchParams>): Promise<MarketSearchRes> {

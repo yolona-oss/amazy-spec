@@ -3,8 +3,6 @@ import { MarketItem } from './../Types/Market.js'
 import { MarketApi } from './api.js'
 
 export interface AnalizerInterface {
-        buildIt(a: number): void
-
         boxAnalizer(item: MarketItem): number
         sneakersAnalizer(item: MarketItem): number
         analize(): Promise<{item: MarketItem, score: number}[]>
@@ -12,18 +10,15 @@ export interface AnalizerInterface {
 
 export class FloorAnalizer implements AnalizerInterface {
         constructor(private api: MarketApi = new MarketApi()) {
+                // super(api)
         }
 
-        buildIt(a: number) {
-                a
-        }
-
-        /* private */ boxAnalizer(item: MarketItem) {
+        boxAnalizer(item: MarketItem) {
                 item
                 return 1
         }
 
-        /* private */ sneakersAnalizer(item: MarketItem) {
+        sneakersAnalizer(item: MarketItem) {
                 item
                 return 1
         }
@@ -55,12 +50,8 @@ export class FloorAnalizer implements AnalizerInterface {
 export class SmartAnalizer implements AnalizerInterface {
         private _curStepItems: {item: MarketItem, score: number}[]
 
-        constructor(private api: MarketApi) {
+        constructor(private api: MarketApi = new MarketApi()) {
                 this._curStepItems = new Array()
-        }
-
-        buildIt(a: number) {
-                a
         }
 
         /* private */ boxAnalizer(item: MarketItem) {
@@ -101,4 +92,4 @@ export class SmartAnalizer implements AnalizerInterface {
 }
 
 export let ANALIZERS: Map<string, AnalizerInterface> = new Map()
-// ANALIZERS.set("Floor", FloorAnalizer)
+ANALIZERS.set("Floor", FloorAnalizer)

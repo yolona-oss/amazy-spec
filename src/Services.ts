@@ -1,7 +1,6 @@
 import * as tg from 'telegraf'
 import { EventEmitter } from 'events'
 import { Database, Manager, Chat } from './database.js'
-// import { ChatServer } from './ChatService.js'
 import { Config } from './Config.js'
 import { AnalizerInterface, ANALIZERS } from './Market/analizer.js'
 import * as analizers from './Market/analizer.js'
