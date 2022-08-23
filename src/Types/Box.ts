@@ -3,7 +3,7 @@ import { MarketItem } from "./Market.js"
 export interface Box extends MarketItem {
         primaryProperties: {
                 Rarity: "Common" | "Uncomon" | "Rare" | "Legendary"
-                Types: "Ranger" | "Hiker" | "Coacher" | "Sprinter" |
+                Type: "Ranger" | "Hiker" | "Coacher" | "Sprinter" |
                         "Box"
                 Parents: number[]
         }

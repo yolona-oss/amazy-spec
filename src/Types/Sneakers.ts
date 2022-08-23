@@ -29,7 +29,7 @@ export interface Sneakers extends MarketItem {
         }
         primaryProperties: {
                 Rarity: "Common" | "Uncomon" | "Rare" | "Legendary"
-                Types: "Ranger" | "Hiker" | "Coacher" | "Sprinter"
+                Type: "Ranger" | "Hiker" | "Coacher" | "Sprinter"
                 Performance: number
                 Fortune: number
                 Joy: number

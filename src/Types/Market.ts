@@ -1,20 +1,25 @@
+// TODO ad dother
 export interface MarketSearchParams {
-        levelMax: number
-        levelMin: number
-        mintMax:  number
-        mintMin:  number
-        page:     number
-        perPage:  number
-        type:     string | "sneakers" | "box"
-        rarity:   string | "common" | "uncommon" | "rare" | "legendary"
-        valueMax: number
-        valueMin: number
+        levelMax:   number
+        levelMin:   number
+        mintMax:    number
+        mintMin:    number
+        page:       number
+        perPage:    number
+        type:       string | "sneakers" | "box"
+        rarity:     string | "common" | "uncommon" | "rare" | "legendary"
+        valueMax:   number
+        valueMin:   number
+        sorting?:   string
+        nonGenesis?: boolean
+        genesis?:    boolean
+        sneakersType?: string[]//("hiker" | "coacher" | "ranger" | "sprinter")[]
 }
 
 export interface MarketItem {
         primaryProperties: {
                 Rarity: "Common" | "Uncomon" | "Rare" | "Legendary"
-                Types: "Ranger" | "Hiker" | "Coacher" | "Sprinter" |
+                Type: "Ranger" | "Hiker" | "Coacher" | "Sprinter" |
                         "Box"
                 Parents: number[]
         }

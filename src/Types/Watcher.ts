@@ -9,13 +9,6 @@ export interface WatcherOpts {
 }
 
 export interface MarketWatcherOpts extends WatcherOpts {
-        wallet: {
-                phrases: string[]
-                keyPair: {
-                        privateKey: string
-                        publicKey: string
-                }
-        }
         autoSell: boolean
         autoBuy: boolean
         argession: number

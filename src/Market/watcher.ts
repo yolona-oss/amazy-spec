@@ -1,16 +1,9 @@
 import { EventEmitter } from 'events'
 import { MarketWatcherOpts, Watcher } from './../Types/Watcher.js'
-import { FloorAnalizer, AnalizerInterface } from './analizer.js'
+import { AnalizerInterface, analizers } from './analizer.js'
 import { sleep } from './../lib/time.js'
 
 const defaultMarketWatcherOpts = {
-        wallet: {
-                phrases: [],
-                keyPair: {
-                        privateKey: "",
-                        publicKey: ""
-                }
-        },
         autoSell: false,
         autoBuy: false,
         argession: 0.5,
@@ -24,7 +17,7 @@ export class MarketWatcher extends EventEmitter implements Watcher {
 
         constructor(
                 private opts: MarketWatcherOpts = defaultMarketWatcherOpts,
-                private analizer: AnalizerInterface = new FloorAnalizer()
+                private analizer: AnalizerInterface = new analizers.floor()
         ) {
                 super()
                 this.terminated = true
@@ -44,18 +37,16 @@ export class MarketWatcher extends EventEmitter implements Watcher {
                 }
         }
 
+        get CurrentAnalizer() {
+                return this.analizer.name;
+        }
+
         get Settings() {
                 return this.opts
         }
 
         get Terminated() {
                 return this.terminated
-        }
-
-        get Ready() {
-                return (
-                        this.opts.wallet.keyPair.privateKey && this.opts.wallet.keyPair.privateKey != ""
-                )
         }
 
         async changeAnalizer(analizer: AnalizerInterface) {
@@ -66,12 +57,6 @@ export class MarketWatcher extends EventEmitter implements Watcher {
                 await this.updateState(() => { this.opts.freq = hz })
         }
 
-        async setWallet(key: string) {
-                await this.updateState(() => {
-                        this.opts.wallet.keyPair.privateKey = key
-                })
-        }
-
         async setAutoBuy(buy: boolean, sell: boolean) {
                 await this.updateState(() => {
                         this.opts.autoBuy = buy
@@ -79,16 +64,12 @@ export class MarketWatcher extends EventEmitter implements Watcher {
                 })
         }
 
-        async start() {
+        start() {
                 if (!this.terminated) {
                         throw "Restarting watcher error"
                 }
-                if (!this.Ready) {
-                        return false
-                }
                 this.terminated = false
                 this.watch()
-                return true
         }
 
         private async watch() {
@@ -96,7 +77,7 @@ export class MarketWatcher extends EventEmitter implements Watcher {
 
                 const analized = await this.analizer.analize()
                 for (const nft of analized) {
-                        if (nft.score > this.opts.argession) {
+                        if (nft.score >= this.opts.argession) {
                                 this.emit("buy", nft.item)
                         }
                 }
