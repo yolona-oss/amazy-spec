@@ -622,6 +622,17 @@ export class BotService extends EventEmitter {
         deconstructor() {
         }
 
+        private async setBotCommands() {
+                this.bot.telegram.setMyCommands(
+                        Object.values(commands).map(cmd => {
+                                return {
+                                        command: '/' + cmd.name,
+                                        description: cmd.description
+                                }
+                        })
+                )
+        }
+
         setAutoBuy(auto: boolean) {
                 if (auto) {
                         this.buyFunction = this.autoBuyF
@@ -648,6 +659,7 @@ export class BotService extends EventEmitter {
                                 })
                         }
                         await this.bot.launch();
+                        await this.setBotCommands()
                         this.running = true;
                         if (adminExisted) {
                                 for (let mngr of await Manager.findMany({})) {

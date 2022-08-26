@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 import { MarketWatcherOpts, Watcher } from './../Types/Watcher.js'
 import { AnalizerInterface, analizers } from './analizer.js'
 import { sleep } from './../lib/time.js'
+import { log } from './../lib/logger/index.js'
 
 const defaultMarketWatcherOpts = {
         autoSell: false,
@@ -75,11 +76,15 @@ export class MarketWatcher extends EventEmitter implements Watcher {
         private async watch() {
                 this.onIteration = true
 
-                const analized = await this.analizer.analize()
-                for (const nft of analized) {
-                        if (nft.score >= this.opts.argession) {
-                                this.emit("buy", nft.item)
+                try {
+                        const analized = await this.analizer.analize()
+                        for (const nft of analized) {
+                                if (nft.score >= this.opts.argession) {
+                                        this.emit("buy", nft.item)
+                                }
                         }
+                } catch (e) {
+                        log.error("Cannot analize:", e)
                 }
 
                 // parse solded nfts and send nodity to tg
