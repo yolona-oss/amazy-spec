@@ -7,7 +7,7 @@ import { MarketApi } from './api.js'
 export interface AnalizerInterface {
         name: string
         boxAnalizer(item: Box, other: Box[]): number
-        sneakersAnalizer(item: Sneakers, other: Sneakers[]): number
+        sneakersAnalizer(item: Sneakers): number
         analize(): Promise<{item: MarketItem, score: number}[]>
 }
 
@@ -23,34 +23,105 @@ class FloorAnalizer implements AnalizerInterface {
 
         boxAnalizer() { return 0 }
 
-        sneakersAnalizer(item: Sneakers, other: Sneakers[]) {
-                let avg = (arr: any[]) => arr.reduce((a,b) => a + b, 0) / arr.length
-                let full = other.concat(item)
-                const floor = avg(full.map(v => toBnb(v.price)))
+        sneakersAnalizer(item: Sneakers) {
+                const per_performance_price = (performance: number, base_performance: number, base_price: number, performance_slice: number, per_perf_mult: number) => {
+                        if (performance > base_performance) {
+                                const perf_diff = performance - base_performance
+                                return base_price * ( perf_diff / performance_slice * per_perf_mult )
+                        }
 
-                console.log(full.map(v => toBnb(v.price)))
+                        return base_price
+                }
 
-                const max = Math.max(floor, toBnb(item.price))
-                const min = Math.min(floor, toBnb(item.price))
-                const diff = (max/min - 1) * 100
-                console.log(new Date().toString())
-                console.log("floor:", floor)
-                console.log("id:", item.tokenId)
-                console.log("rarity:", item.primaryProperties.Rarity)
-                console.log("price:", toBnb(item.price))
-                console.log("diff:", diff)
-                console.log("stats:", item.baseProperties)
-                console.log()
+                interface AnalizeSettings {
+                        type: string
 
-                if (
-                        item.primaryProperties.Performance > 8.5 &&
-                        toBnb(item.price) <= 0.9
-                ) {
-                        // const max = Math.max(floor, toBnb(item.price))
-                        // const min = Math.min(floor, toBnb(item.price))
-                        // const diff = (max/min - 1) * 100
+                        min_performance: number
 
-                        if (floor == max && diff > 5) {
+                        min_level?: number
+                        max_level?: number
+                        min_mint?: number
+                        max_mint?: number
+
+                        max_base_price: number
+                        performance_grow_step: number
+                        performance_grow_mult: number
+                }
+
+                const analize = (item: Sneakers, settings: AnalizeSettings) => {
+                        if ((settings.type == "any" || item.primaryProperties.Type.toLowerCase() == settings.type.toLowerCase()) &&
+                                        item.baseProperties.Performance >= settings.min_performance &&
+                                        (settings.min_level ? item.level >= settings.min_level : true) && 
+                                        (settings.max_level ? item.level <= settings.max_level : true) && 
+                                        (settings.min_mint ? item.primaryProperties.Mint >= settings.min_mint : true) && 
+                                        (settings.max_mint ? item.primaryProperties.Mint <= settings.max_mint : true) && 
+                                        toBnb(item.price) <= (item.baseProperties.Performance > settings.min_performance ?
+                                                settings.max_base_price + (item.baseProperties.Performance - settings.min_performance) /
+                                                                           settings.performance_grow_step * settings.performance_grow_mult
+                                                :
+                                                settings.max_base_price)
+                        ) {
+                                return true
+                        }
+                        return false
+                }
+
+                const settings: AnalizeSettings[] = [
+                        {
+                                type: "Coacher",
+                                max_mint: 0,
+                                max_level: 0,
+                                min_performance: 8.2,
+                                max_base_price: 1,
+                                performance_grow_step: 0.2,
+                                performance_grow_mult: 0.01,
+                        },
+                        {
+                                type: "Coacher",
+                                max_mint: 0,
+                                max_level: 0,
+                                min_performance: 6.5,
+                                max_base_price: 0.8,
+                                performance_grow_step: 0.1,
+                                performance_grow_mult: 0.01,
+                        },
+                        {
+                                type: "Hiker",
+                                max_mint: 0,
+                                max_level: 0,
+                                min_performance: 8.5,
+                                max_base_price: 0.93,
+                                performance_grow_step: 0.3,
+                                performance_grow_mult: 0.01,
+                        },
+
+                        // instabuy
+
+                        {
+                                type: "any",
+                                min_performance: 0,
+                                max_base_price: 0.5,
+                                performance_grow_step: 0.1,
+                                performance_grow_mult: 0,
+                        },
+                        {
+                                type: "Coacher",
+                                min_performance: 0,
+                                max_base_price: 0.8,
+                                performance_grow_step: 0.1,
+                                performance_grow_mult: 0,
+                        },
+                        {
+                                type: "Hiker",
+                                min_performance: 0,
+                                max_base_price: 0.7,
+                                performance_grow_step: 0.1,
+                                performance_grow_mult: 0,
+                        },
+                ]
+
+                for (const setting of settings) {
+                        if (analize(item, setting)) {
                                 return 1
                         }
                 }
@@ -64,14 +135,14 @@ class FloorAnalizer implements AnalizerInterface {
                 const baseFetchOpts = {
                         type: "sneakers",
                         sorting: "Price ascending",
-                        sneakersType: [
-                                'hiker',
-                                'coacher'
-                        ],
-                        mintMax: 0,
-                        levelMax: 0,
+                        // sneakersType: [
+                        //         'hiker',
+                        //         'coacher'
+                        // ],
+                        // mintMax: 0,
+                        // levelMax: 0,
                         page: 1,
-                        perPage: 3,
+                        perPage: 100,
                 }
 
                 const sneakers = {
@@ -79,27 +150,23 @@ class FloorAnalizer implements AnalizerInterface {
                                 ...baseFetchOpts,
                                 rarity: "common"
                         })).sales,
-                        uncommon: (await this.api.fetchNFT({
-                                ...baseFetchOpts,
-                                rarity: "uncommon"
-                        })).sales,
-                        rare: (await this.api.fetchNFT({
-                                ...baseFetchOpts,
-                                rarity: "rare"
-                        })).sales,
+                        // uncommon: (await this.api.fetchNFT({
+                        //         ...baseFetchOpts,
+                        //         rarity: "uncommon"
+                        // })).sales,
+                        // rare: (await this.api.fetchNFT({
+                        //         ...baseFetchOpts,
+                        //         rarity: "rare"
+                        // })).sales,
                 }
-
+                
                 Object.values(sneakers).forEach((collection) => {
-                        if (collection.length == 3) {
-                                collection.forEach((i) =>
-                                        items.push({
-                                                item: i,
-                                                score: (this.sneakersAnalizer(<Sneakers>i,
-                                                        <Sneakers[]>collection.filter(v => v.tokenId != i.tokenId)
-                                                ))
-                                        })
-                                )
-                        }
+                        collection.forEach((i) =>
+                                items.push({
+                                        item: i,
+                                        score: this.sneakersAnalizer(<Sneakers>i)
+                                })
+                        )
                 })
 
                 return items

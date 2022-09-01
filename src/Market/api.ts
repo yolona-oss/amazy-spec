@@ -26,7 +26,7 @@ export class MarketApi {
         }
 
         connectedWallet() {
-                return this.wallet?.privateKey
+                return this.wallet
         }
 
         async setWallet(publicKey: string, privateKey: string): Promise<boolean> {
@@ -62,7 +62,7 @@ export class MarketApi {
                         "from": this.wallet.publicKey,
                         "to": amazy_contract_address,
                         "nonce": web3.eth.getTransactionCount(this.wallet.publicKey),
-                        "gas": 22000,
+                        "gas": 42000,
                         "gasPrice": web3.utils.toWei('8', 'gwei'),
                         "chainId": 56,
                         "data": order_data

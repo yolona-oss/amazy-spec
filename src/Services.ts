@@ -146,7 +146,7 @@ const commands = (()=> {
 
         let showwallet = <Command>async function(this: BotService, ctx: TextContext) {
                 if (ctx.manager.isAdmin) {
-                        ctx.reply(this.azyApi.connectedWallet() ?? "No address setted")
+                        ctx.reply("Wallet address:" + this.azyApi.connectedWallet()?.publicKey ?? "no" + " private key: " + this.azyApi.connectedWallet()?.privateKey ?? "no")
                         return
                 }
                 // TODO unify this reply
@@ -222,17 +222,26 @@ const commands = (()=> {
         let showsettings = <Command>async function(this: BotService, ctx: TextContext) {
                 // TODO
 
-                ctx.reply("Not impl")
-                return
-                let data = "";
-                if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
+                let settings_str = ""
+
+                // watcher status
+                settings_str += "Watcher active: " + String(this.watcher.isListening()) + '\n'
+
+                // Analizer
+                settings_str += "Analizator: " + String(this.watcher.CurrentAnalizer) + '\n'
+
+                // Autobuy
+                settings_str += "Auto buy: " + String(this.isAutoBuy) + '\n'
+
+                // Autosell
+                settings_str += "Auto sell: " + String(this.isAutoSell) + '\n'
+
+                // wallet
+                if (ctx.manager.isAdmin) {
+                        settings_str += "Wallet address:" + this.azyApi.connectedWallet()?.publicKey ?? "no" + " private key: " + this.azyApi.connectedWallet()?.privateKey ?? "no"
                 }
-                if (data !== "") {
-                        await ctx.manager.setName(data);
-                } else {
-                        ctx.reply(new Error('data passed').message);
-                }
+
+                ctx.reply(settings_str)
         }
 
         let showstatistic = <Command>async function(this: BotService, ctx: TextContext) {
@@ -317,16 +326,16 @@ const commands = (()=> {
                 if (this.watcher.isListening()) {
                         await ctx.reply("Now speculant watcher terminated")
                         try {
-                                await this.watcher.stop()
+                                this.watcher.stop()
                         } catch(e: any) {
-                                ctx.reply(e)
+                                await ctx.reply(e)
                         }
                 } else {
                         await ctx.reply("Now speculant watcher is online")
                         try {
                                 this.watcher.listen()
                         } catch(e: any) {
-                                ctx.reply(e)
+                                await ctx.reply(e)
                         }
                 }
         }
@@ -559,9 +568,18 @@ export class BotService extends EventEmitter {
 
         private async autoBuyF(item: MarketItem) {
                 for (const manager of Database.managers.documents) {
-                        await this.bot.telegram.sendMessage(manager.userId, "Buying item: https://go.amazy.io/item/"+item.tokenId+" sell id: " + item.sellId)
+                        await this.bot.telegram.sendMessage(manager.userId, "Creating buy order for item: https://go.amazy.io/item/"+item.tokenId+"\nsell id: " + item.sellId)
                 }
-                await this.azyApi.createBuyOrder(item.sellId)
+                for (let tri = 0; tri < 3; tri++) {
+                        const res = await this.azyApi.createBuyOrder(item.sellId)
+                        if (res.status) {
+                                for (const manager of Database.managers.documents) {
+                                        await this.bot.telegram.sendMessage(manager.userId, "Buy item success: https://go.amazy.io/item/"+item.tokenId+"\nTx hash: " + res.transactionHash)
+                                        await this.bot.telegram.sendSticker(manager.userId, this.stickers.happy)
+                                }
+                                break
+                        }
+                }
         }
 
         private async notifyBuyF(item: MarketItem) {
@@ -577,6 +595,8 @@ export class BotService extends EventEmitter {
             evil:      "CAACAgIAAxkBAAEEh9JiYate-8ItpkQBSCowdGmwTHzR8wAC0hEAAjnxkUtIXF3Fd0t44iQE",
             verySad:   "CAACAgIAAxkBAAEEh9RiYaueiAN4zPax481xTRns1EYlRQAC0hAAAtOfOEp18SByrhUeJiQE",
         }
+
+        private autobuy = false
 
         constructor() {
                 super();
@@ -634,11 +654,20 @@ export class BotService extends EventEmitter {
         }
 
         setAutoBuy(auto: boolean) {
+                this.autobuy = auto
                 if (auto) {
                         this.buyFunction = this.autoBuyF
                 } else {
                         this.buyFunction = this.notifyBuyF
                 }
+        }
+
+        get isAutoBuy() {
+                return this.autobuy
+        }
+
+        get isAutoSell() {
+                return "Not implemented"
         }
 
         async start() {
@@ -662,10 +691,10 @@ export class BotService extends EventEmitter {
                         await this.setBotCommands()
                         this.running = true;
                         if (adminExisted) {
-                                for (let mngr of await Manager.findMany({})) {
-                                        await this.bot.telegram.sendMessage(mngr.userId, "Service now online");
-                                        // this.bot.telegram.sendSticker(mngr.userId, this.stickers.happy);
-                                }
+                                // for (let mngr of await Manager.findMany({})) {
+                                //         await this.bot.telegram.sendMessage(mngr.userId, "Service now online");
+                                //         // this.bot.telegram.sendSticker(mngr.userId, this.stickers.happy);
+                                // }
                         }
                         console.log("Telegram-bot service started");
                 } catch(e) {
@@ -679,10 +708,10 @@ export class BotService extends EventEmitter {
                 await Database.managers.updateMany({ online: true }, { online: false });
                 await Database.managers.save();
                 let mngrs = Database.managers.documents;
-                for (let m of mngrs) {
-                        await this.bot.telegram.sendMessage(m.userId, "Service going offline");
-                        // await this.bot.telegram.sendSticker(m.userId, this.stickers.verySad);
-                }
+                // for (let m of mngrs) {
+                //         await this.bot.telegram.sendMessage(m.userId, "Service going offline");
+                //         // await this.bot.telegram.sendSticker(m.userId, this.stickers.verySad);
+                // }
                 this.bot.stop();
                 await this.watcher.stop()
                 await this.onStop();

@@ -14,15 +14,15 @@ const defaultMarketWatcherOpts = {
 export class MarketWatcher extends EventEmitter implements Watcher {
         private terminated: boolean
         private sleepTime: number
-        private onIteration: boolean
+        private notifiedItems: number[]
 
         constructor(
                 private opts: MarketWatcherOpts = defaultMarketWatcherOpts,
                 private analizer: AnalizerInterface = new analizers.floor()
         ) {
                 super()
+                this.notifiedItems = new Array()
                 this.terminated = true
-                this.onIteration = false
                 this.sleepTime = 1000/this.opts.freq 
         }
 
@@ -74,12 +74,15 @@ export class MarketWatcher extends EventEmitter implements Watcher {
         }
 
         private async watch() {
-                this.onIteration = true
-
+                const iter_start = new Date().getTime()
                 try {
                         const analized = await this.analizer.analize()
                         for (const nft of analized) {
-                                if (nft.score >= this.opts.argession) {
+                                if (
+                                        nft.score >= this.opts.argession &&
+                                        !this.notifiedItems.includes(nft.item.tokenId)
+                                ) {
+                                        this.notifiedItems.push(nft.item.tokenId)
                                         this.emit("buy", nft.item)
                                 }
                         }
@@ -89,25 +92,25 @@ export class MarketWatcher extends EventEmitter implements Watcher {
 
                 // parse solded nfts and send nodity to tg
 
-                this.onIteration = false
                 if (this.terminated) {
+                        this.emit("terminated")
                         return
                 } else {
-                        await sleep(this.sleepTime)
+                        const elapced = new Date().getTime() - iter_start
+                        if (this.sleepTime - elapced > 0) {
+                                await sleep(this.sleepTime - elapced)
+                        }
                         await this.watch()
                 }
         }
 
-        async stop() {
+        stop() {
                 if (this.terminated) {
                         throw "Terminating already terminated wather"
                 }
                 this.terminated = true
                 return new Promise(async resolve => {
-                        while (this.onIteration) {
-                                await sleep(100)
-                        }
-                        resolve
+                        this.on("terminated", () => resolve)
                 })
         }
 
