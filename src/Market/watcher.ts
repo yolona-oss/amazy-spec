@@ -75,6 +75,7 @@ export class MarketWatcher extends EventEmitter implements Watcher {
 
         private async watch() {
                 const iter_start = new Date().getTime()
+                log.echo("Watching...")
                 try {
                         const analized = await this.analizer.analize()
                         for (const nft of analized) {

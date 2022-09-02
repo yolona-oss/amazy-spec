@@ -22,7 +22,6 @@ export class MarketApi {
         }
 
         constructor(private api_url: URL = new URL("https://rest.amazy.io/marketplace")) {
-
         }
 
         connectedWallet() {
@@ -30,16 +29,17 @@ export class MarketApi {
         }
 
         async setWallet(publicKey: string, privateKey: string): Promise<boolean> {
-                try {
-                        web3.eth.accounts.privateKeyToAccount(privateKey)
-                } catch(e) {
-                        return false
-                }
+                // try {
+                //         web3.eth.getBalance()
+                // } catch(e) {
+                //         return false
+                // }
 
                 this.wallet = {
                         privateKey: privateKey,
                         publicKey: publicKey
                 }
+                console.log("Balance:", await web3.eth.getBalance(this.wallet.publicKey))
                 return true
         }
 
@@ -58,19 +58,28 @@ export class MarketApi {
                         order_data = method_buy + '0'.repeat(74-method_buy.length) + hex_sale_id
                 }
 
-                const raw_transaction = {
+                const tx = {
                         "from": this.wallet.publicKey,
                         "to": amazy_contract_address,
-                        "nonce": web3.eth.getTransactionCount(this.wallet.publicKey),
-                        "gas": 42000,
-                        "gasPrice": web3.utils.toWei('8', 'gwei'),
+                        "nonce": await web3.eth.getTransactionCount(this.wallet.publicKey),
+                        "gas": 41000,
+                        "gasPrice": web3.utils.toWei('10', 'gwei'),
                         "chainId": 56,
                         "data": order_data
                 }
 
-                const signed_tx = web3.eth.accounts.sign(JSON.stringify(raw_transaction), this.wallet.privateKey)
-                // @ts-ignore
-                const tx_res = await web3.eth.sendSignedTransaction(signed_tx.rawTransaction)
+                let tx_res
+                try {
+                        let signed_tx = await web3.eth.accounts.signTransaction(tx, this.wallet.privateKey)
+                        if (signed_tx.rawTransaction) {
+                                tx_res = await web3.eth.sendSignedTransaction(signed_tx.rawTransaction)
+                        } else {
+                                throw "No raw transaction after signing"
+                        }
+                } catch (e) {
+                        console.error(e)
+                        tx_res = { success: false }
+                }
 
                 return tx_res
         }
