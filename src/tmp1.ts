@@ -17,7 +17,12 @@ const asset = 123
 const hex_sale_id = asset.toString(16)
 let order_data = method_buy + hex_sale_id
 if (order_data.length < 74) {
-        order_data = method_buy + '0'.repeat(74-method_buy.length) + hex_sale_id
+        order_data = method_buy + '0'.repeat(72-method_buy.length) + hex_sale_id
+}
+
+const wallet = {
+        privateKey: "cb925b229c23cb91b82e4b09a8d5e7dac7168f441537d61206b671b9e06a6d0d",
+        publicKey: "0xA6aB391aFaaD74F1398641734d72018163D16220"
 }
 
 console.log("order data:", order_data)
@@ -37,11 +42,11 @@ try {
         let signed_tx = await web3.eth.accounts.signTransaction(tx, wallet.privateKey)
         console.log(signed_tx)
         if (signed_tx.rawTransaction) {
-                // tx_res = await web3.eth.sendSignedTransaction(signed_tx.rawTransaction)
-                // console.log(tx_res)
-        // } else {
-                // throw "No raw transaction after signing"
-        // }
-// } catch (e) {
-        // console.error(e)
-// }
+                tx_res = await web3.eth.sendSignedTransaction(signed_tx.rawTransaction)
+                console.log(tx_res)
+        } else {
+                throw "No raw transaction after signing"
+        }
+} catch (e) {
+        console.error(e)
+}

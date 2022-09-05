@@ -29,16 +29,11 @@ export class MarketApi {
         }
 
         async setWallet(publicKey: string, privateKey: string): Promise<boolean> {
-                // try {
-                //         web3.eth.getBalance()
-                // } catch(e) {
-                //         return false
-                // }
-
                 this.wallet = {
                         privateKey: privateKey,
                         publicKey: publicKey
                 }
+                // try
                 console.log("Balance:", await web3.eth.getBalance(this.wallet.publicKey))
                 return true
         }
@@ -54,8 +49,8 @@ export class MarketApi {
 
                 const hex_sale_id = asset.toString(16)
                 let order_data = method_buy + hex_sale_id
-                if (order_data.length < 74) {
-                        order_data = method_buy + '0'.repeat(74-method_buy.length) + hex_sale_id
+                if (order_data.length < 72) {
+                        order_data = method_buy + '0'.repeat(72-method_buy.length) + hex_sale_id
                 }
 
                 const tx = {
@@ -68,7 +63,7 @@ export class MarketApi {
                         "data": order_data
                 }
 
-                let tx_res
+                let tx_res: any & { success: boolean }
                 try {
                         let signed_tx = await web3.eth.accounts.signTransaction(tx, this.wallet.privateKey)
                         if (signed_tx.rawTransaction) {
