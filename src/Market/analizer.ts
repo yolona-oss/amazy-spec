@@ -48,6 +48,13 @@ class FloorAnalizer implements AnalizerInterface {
                         performance_grow_mult: number
                 }
 
+                // interface BoxAnalizeSettings {
+                //         mint1: Pick<Sneakers, >
+                //         mint2: Pick<Sneakers, "tokenId">
+                //         max_price: number
+                //         rarity?: string
+                // }
+
                 const analize = (item: Sneakers, settings: AnalizeSettings) => {
                         if ((settings.type == "any" || item.primaryProperties.Type.toLowerCase() == settings.type.toLowerCase()) &&
                                         item.baseProperties.Performance >= settings.min_performance &&
@@ -65,6 +72,16 @@ class FloorAnalizer implements AnalizerInterface {
                         }
                         return false
                 }
+
+                // const box_analize = (item: Box, settings: BoxAnalizeSettings) => {
+                //         settings
+                //         if (
+                //                 toBnb(item.price) <= settings.max_price &&
+                //                 item.parents.length == 2
+                //         ) {
+                //                 // if (item.parents.)
+                //         }
+                // }
 
                 const settings: AnalizeSettings[] = [
                         {
@@ -118,7 +135,24 @@ class FloorAnalizer implements AnalizerInterface {
                                 performance_grow_step: 0.1,
                                 performance_grow_mult: 0,
                         },
+                        {
+                                type: "Hiker",
+                                max_mint: 0,
+                                min_performance: 0,
+                                max_base_price: 0.85,
+                                performance_grow_step: 0.1,
+                                performance_grow_mult: 0,
+                        }
                 ]
+
+                // const box_settings: BoxAnalizeSettings[] = [
+                //         {
+                //                 mint1: Sneakers
+                //                 mint2: Sneakers
+                //                 max_price: number
+                //                 rarity?: string
+                //         }
+                // ]
 
                 for (const setting of settings) {
                         if (analize(item, setting)) {
@@ -159,7 +193,7 @@ class FloorAnalizer implements AnalizerInterface {
                         //         rarity: "rare"
                         // })).sales,
                 }
-                
+
                 Object.values(sneakers).forEach((collection) => {
                         collection.forEach((i) =>
                                 items.push({

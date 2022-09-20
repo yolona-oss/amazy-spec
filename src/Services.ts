@@ -1,12 +1,13 @@
 import * as tg from 'telegraf'
 import { EventEmitter } from 'events'
-import { Database, Manager, Chat } from './database.js'
+import { Database, Manager } from './database.js'
 import { Config } from './Config.js'
 import { MarketItem } from './Types/Market.js'
+// import { Sneakers } from './Types/Sneakers.js'
 import { AnalizerInterface, analizers } from './Market/analizer.js'
 import { MarketApi } from './Market/api.js'
 import { MarketWatcher } from './Market/watcher.js'
-import { MarketWatcherOpts } from './Types/Watcher.js'
+// import { MarketWatcherOpts } from './Types/Watcher.js'
 
 interface Context extends tg.Context {
         manager: Manager
@@ -568,13 +569,23 @@ export class BotService extends EventEmitter {
 
         private async autoBuyF(item: MarketItem) {
                 for (const manager of Database.managers.documents) {
-                        await this.bot.telegram.sendMessage(manager.userId, "Creating buy order for item: https://go.amazy.io/item/"+item.tokenId+"\nsell id: " + item.sellId)
+                        await this.bot.telegram.sendMessage(manager.userId,
+                                "Creating buy order for item: https://go.amazy.io/item/"+item.tokenId+
+                                "\nsell id: " + item.sellId +
+                                "\nprice bnb: " + item.price +
+                                "\nprice eth: " + item.priceEth
+                        )
                 }
                 for (let tri = 0; tri < 3; tri++) {
                         const res = await this.azyApi.createBuyOrder(item.sellId)
                         if (res.status) {
                                 for (const manager of Database.managers.documents) {
-                                        await this.bot.telegram.sendMessage(manager.userId, "Buy item success: https://go.amazy.io/item/"+item.tokenId+"\nTx hash: " + res.transactionHash)
+                                        await this.bot.telegram.sendMessage(manager.userId,
+                                                "Buy item success: https://go.amazy.io/item/"+item.tokenId+
+                                                "\nTx hash: " + res.transactionHash +
+                                                "\nprice bnb: " + item.price +
+                                                "\nprice eth: " + item.priceEth
+                                        )
                                         await this.bot.telegram.sendSticker(manager.userId, this.stickers.happy)
                                 }
                                 break
@@ -584,16 +595,20 @@ export class BotService extends EventEmitter {
 
         private async notifyBuyF(item: MarketItem) {
                 for (const manager of Database.managers.documents) {
-                        await this.bot.telegram.sendMessage(manager.userId, "Found buy order: https://go.amazy.io/item/"+item.tokenId)
+                        await this.bot.telegram.sendMessage(manager.userId,
+                                "Found buy order: https://go.amazy.io/item/"+item.tokenId+
+                                "\nprice bnb: " + item.price +
+                                "\nprice eth: " + item.priceEth
+                        )
                 }
         }
 
         private readonly stickers = {
-            welcoming: "CAACAgIAAxkBAAEEh85iYatAqlMz81qfn7Dk303ummYrjwACGBEAAvE40EoZjSpXJ-H1-CQE",
-            happy:     "CAACAgIAAxkBAAEEh9BiYatNE-M0LO7eJ6A8rERHIennowAC9A8AAuauOUpmEnHaU53szyQE",
-            sad:       "CAACAgIAAxkBAAEEh9ZiYavBfd0mfaBWTzqMeBSYbwkB7wACjxMAAosj2UpwO-yY639C-iQE",
-            evil:      "CAACAgIAAxkBAAEEh9JiYate-8ItpkQBSCowdGmwTHzR8wAC0hEAAjnxkUtIXF3Fd0t44iQE",
-            verySad:   "CAACAgIAAxkBAAEEh9RiYaueiAN4zPax481xTRns1EYlRQAC0hAAAtOfOEp18SByrhUeJiQE",
+                welcoming: "CAACAgIAAxkBAAEEh85iYatAqlMz81qfn7Dk303ummYrjwACGBEAAvE40EoZjSpXJ-H1-CQE",
+                happy:     "CAACAgIAAxkBAAEEh9BiYatNE-M0LO7eJ6A8rERHIennowAC9A8AAuauOUpmEnHaU53szyQE",
+                sad:       "CAACAgIAAxkBAAEEh9ZiYavBfd0mfaBWTzqMeBSYbwkB7wACjxMAAosj2UpwO-yY639C-iQE",
+                evil:      "CAACAgIAAxkBAAEEh9JiYate-8ItpkQBSCowdGmwTHzR8wAC0hEAAjnxkUtIXF3Fd0t44iQE",
+                verySad:   "CAACAgIAAxkBAAEEh9RiYaueiAN4zPax481xTRns1EYlRQAC0hAAAtOfOEp18SByrhUeJiQE",
         }
 
         private autobuy = false
@@ -707,13 +722,15 @@ export class BotService extends EventEmitter {
                 this.running = false;
                 await Database.managers.updateMany({ online: true }, { online: false });
                 await Database.managers.save();
-                let mngrs = Database.managers.documents;
+                // let mngrs = Database.managers.documents;
                 // for (let m of mngrs) {
                 //         await this.bot.telegram.sendMessage(m.userId, "Service going offline");
                 //         // await this.bot.telegram.sendSticker(m.userId, this.stickers.verySad);
                 // }
                 this.bot.stop();
-                await this.watcher.stop()
+                if (this.watcher.isListening()) {
+                        await this.watcher.stop()
+                }
                 await this.onStop();
         }
 

@@ -49,15 +49,15 @@ export class MarketApi {
 
                 const hex_sale_id = asset.toString(16)
                 let order_data = method_buy + hex_sale_id
-                if (order_data.length < 72) {
-                        order_data = method_buy + '0'.repeat(72-method_buy.length) + hex_sale_id
+                if (order_data.length < 74) {
+                        order_data = method_buy + '0'.repeat(74-method_buy.length-hex_sale_id.length) + hex_sale_id
                 }
 
                 const tx = {
                         "from": this.wallet.publicKey,
                         "to": amazy_contract_address,
                         "nonce": await web3.eth.getTransactionCount(this.wallet.publicKey),
-                        "gas": 41000,
+                        "gas": 310000,
                         "gasPrice": web3.utils.toWei('10', 'gwei'),
                         "chainId": 56,
                         "data": order_data

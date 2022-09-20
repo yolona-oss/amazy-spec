@@ -11,6 +11,7 @@
                 "graceful-fs": "^4.2.10"
         },
         "dependencies": {
+                "@jpmonette/bscscan": "^0.2.4",
                 "@types/download": "^8.0.1",
                 "@types/events": "^3.0.0",
                 "@types/mime-types": "^2.1.1",
@@ -29,6 +30,7 @@
                 "mime-types": "^2.1.35",
                 "multi-progress-bars": "^4.3.1",
                 "ngrok": "^4.3.1",
+                "nodeplotlib": "^1.1.2",
                 "qs": "^6.11.0",
                 "superstruct": "^0.15.4",
                 "telegraf": "^4.8.6",
