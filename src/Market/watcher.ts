@@ -4,9 +4,7 @@ import { AnalizerInterface, analizers } from './analizer.js'
 import { sleep } from './../lib/time.js'
 import { log } from './../lib/logger/index.js'
 
-const defaultMarketWatcherOpts = {
-        autoSell: false,
-        autoBuy: false,
+const defaultMarketWatcherOpts: MarketWatcherOpts = {
         argession: 0.5,
         freq: 1
 }
@@ -17,12 +15,17 @@ export class MarketWatcher extends EventEmitter implements Watcher {
         private notifiedItems: number[]
 
         constructor(
-                private opts: MarketWatcherOpts = defaultMarketWatcherOpts,
-                private analizer: AnalizerInterface = new analizers.floor()
+                private opts?: MarketWatcherOpts,
+                private analizer: AnalizerInterface = new analizers.static()
         ) {
                 super()
+                this.opts = {
+                        ...defaultMarketWatcherOpts,
+                        ...opts
+                }
                 this.notifiedItems = new Array()
                 this.terminated = true
+                // @ts-ignore
                 this.sleepTime = 1000/this.opts.freq 
         }
 
@@ -55,14 +58,7 @@ export class MarketWatcher extends EventEmitter implements Watcher {
         }
 
         async setFreq(hz: number) {
-                await this.updateState(() => { this.opts.freq = hz })
-        }
-
-        async setAutoBuy(buy: boolean, sell: boolean) {
-                await this.updateState(() => {
-                        this.opts.autoBuy = buy
-                        this.opts.autoSell = sell
-                })
+                await this.updateState(() => { this.opts!.freq = hz })
         }
 
         start() {
@@ -79,7 +75,7 @@ export class MarketWatcher extends EventEmitter implements Watcher {
                         const analized = await this.analizer.analize()
                         for (const nft of analized) {
                                 if (
-                                        nft.score >= this.opts.argession &&
+                                        nft.score >= this.opts!.argession &&
                                         !this.notifiedItems.includes(nft.item.tokenId)
                                 ) {
                                         this.notifiedItems.push(nft.item.tokenId)

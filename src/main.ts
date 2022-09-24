@@ -1,7 +1,6 @@
 import * as fs from 'fs'
 import { dirname } from 'path'
 import { BotService } from './Services.js'
-import { Config } from './Config.js'
 
 const lockFilePath = "./.lock.pid";
 
@@ -11,7 +10,6 @@ const lockFilePath = "./.lock.pid";
                         throw "server already running. Process PID: " +
                                 fs.readFileSync(lockFilePath).toString()
                 }
-                Config();
                 try {
                         fs.accessSync(dirname(lockFilePath), fs.constants.W_OK)
                 } catch (e) {
@@ -30,7 +28,7 @@ const lockFilePath = "./.lock.pid";
                 process.on("SIGINT", async () => await server.stop());
                 process.on("SIGTERM", async () => await server.stop());
 
-                server.onStop = () => {
+                server.onStop = async () => {
                         fs.unlinkSync(lockFilePath);
                 }
 
@@ -44,7 +42,7 @@ const lockFilePath = "./.lock.pid";
                         }).catch((e) => {
                                 throw "Error occured while service startup: " + e;
                         })
-                server.onStop = () => {
+                server.onStop = async () => {
                         fs.unlinkSync(lockFilePath);
                 }
         } catch (e) {

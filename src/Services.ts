@@ -1,13 +1,9 @@
 import * as tg from 'telegraf'
 import { EventEmitter } from 'events'
 import { Database, Manager } from './database.js'
-import { Config } from './Config.js'
-import { MarketItem } from './Types/Market.js'
-// import { Sneakers } from './Types/Sneakers.js'
-import { AnalizerInterface, analizers } from './Market/analizer.js'
-import { MarketApi } from './Market/api.js'
-import { MarketWatcher } from './Market/watcher.js'
-// import { MarketWatcherOpts } from './Types/Watcher.js'
+import cfg from './Config.js'
+import { Bot } from './Bot.js'
+import { analizers } from './Market/analizer.js'
 
 interface Context extends tg.Context {
         manager: Manager
@@ -22,14 +18,10 @@ type Command = {
 const commands = (()=> {
         let start = <Command>async function(this: BotService, ctx: TextContext) {
                 await ctx.reply("Hello, dummy comman here :)");
-                // ctx.replyWithSticker(this.stickers.welcoming);
         }
 
         let help = <Command>async function(this: BotService, ctx: TextContext) {
                 let msg: string = "";
-                // const maxCmdLen = Object.values(commands).reduce((prev, cur) => {
-                //         return prev.name.length < cur.name.length ? cur : prev
-                // }, help).name.length
                 Object.values(commands).forEach((cmd) => {
                         msg += "/" + cmd.name + " "/*.repeat(maxCmdLen - cmd.name.length+1)*/
                                 + cmd.description + ". Arg: " + cmd.args + "\n\n";
@@ -75,8 +67,6 @@ const commands = (()=> {
         }
 
         let setautobuy = <Command>async function(this: BotService, ctx: TextContext) {
-                // TODO
-
                 let data = "";
                 if (ctx.message && ctx.message.text) {
                         data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
@@ -84,15 +74,15 @@ const commands = (()=> {
                 if (data !== "") {
                         if (data === "true") {
                                 await ctx.reply("Auto buy is enabled")
-                                this.setAutoBuy(true)
+                                this.marketBot.enableAutoBuy()
                         } else if (data === "false") {
                                 await ctx.reply("Auto buy is disabled")
-                                this.setAutoBuy(false)
+                                this.marketBot.disableAutoBuy()
                         } else {
                                 await ctx.reply("Invalida input")
                         }
                 } else {
-                        await ctx.reply(new Error('data passed').message);
+                        await ctx.reply(new Error('no data passed').message);
                 }
         }
 
@@ -101,31 +91,6 @@ const commands = (()=> {
 
                 ctx.reply("Not impl")
                 return
-                let data = "";
-                if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
-                }
-                if (data !== "") {
-                        await ctx.manager.setName(data);
-                } else {
-                        ctx.reply(new Error('data passed').message);
-                }
-        }
-
-        let setspeculationargesy = <Command>async function(this: BotService, ctx: TextContext) {
-                // TODO
-
-                ctx.reply("Not impl")
-                return
-                let data = "";
-                if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
-                }
-                if (data !== "") {
-                        await ctx.manager.setName(data);
-                } else {
-                        ctx.reply(new Error('data passed').message);
-                }
         }
 
         let setwallet = <Command>async function(this: BotService, ctx: TextContext) {
@@ -134,7 +99,7 @@ const commands = (()=> {
                         data = String(ctx.message.text.slice('setwallet'.length+2)).trim();
                 }
                 if (data !== "") {
-                        let ok = await this.azyApi.setWallet(data.split(' ')[0], data.split(' ')[1])
+                        let ok = await this.marketBot.azyApi.setWallet(data.split(' ')[0], data.split(' ')[1])
                         if (ok) {
                                 ctx.reply("Wallet change success")
                         } else {
@@ -147,7 +112,8 @@ const commands = (()=> {
 
         let showwallet = <Command>async function(this: BotService, ctx: TextContext) {
                 if (ctx.manager.isAdmin) {
-                        ctx.reply("Wallet address:" + this.azyApi.connectedWallet()?.publicKey ?? "no" + " private key: " + this.azyApi.connectedWallet()?.privateKey ?? "no")
+                        ctx.reply("Wallet address:" + (this.marketBot.azyApi.connectedWallet()!.publicKey ?? "no") +
+                                  " private key: " + (this.marketBot.azyApi.connectedWallet()!.privateKey ?? "no"))
                         return
                 }
                 // TODO unify this reply
@@ -161,6 +127,7 @@ const commands = (()=> {
                 if (ctx.message && ctx.message.text) {
                         data = String(ctx.message.text.slice('setwatcherfreq'.length+2)).trim();
                         if (Number(data) > 0) {
+                                this.marketBot.watcher.setFreq(Number(data))
                         } else {
                                 ctx.reply(new Error('Its not number or number is below zero').message);
                         }
@@ -177,15 +144,6 @@ const commands = (()=> {
 
                 ctx.reply("Not impl")
                 return
-                let data = "";
-                if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
-                }
-                if (data !== "") {
-                        await ctx.manager.setName(data);
-                } else {
-                        ctx.reply(new Error('data passed').message);
-                }
         }
 
         let removeproxywatcher = <Command>async function(this: BotService, ctx: TextContext) {
@@ -193,15 +151,6 @@ const commands = (()=> {
 
                 ctx.reply("Not impl")
                 return
-                let data = "";
-                if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
-                }
-                if (data !== "") {
-                        await ctx.manager.setName(data);
-                } else {
-                        ctx.reply(new Error('data passed').message);
-                }
         }
 
         let watchers = <Command>async function(this: BotService, ctx: TextContext) {
@@ -209,15 +158,6 @@ const commands = (()=> {
 
                 ctx.reply("Not impl")
                 return
-                let data = "";
-                if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
-                }
-                if (data !== "") {
-                        await ctx.manager.setName(data);
-                } else {
-                        ctx.reply(new Error('data passed').message);
-                }
         }
 
         let showsettings = <Command>async function(this: BotService, ctx: TextContext) {
@@ -226,20 +166,22 @@ const commands = (()=> {
                 let settings_str = ""
 
                 // watcher status
-                settings_str += "Watcher active: " + String(this.watcher.isListening()) + '\n'
+                settings_str += "Watcher active: " + String(!this.marketBot.watcher.Terminated) + '\n'
 
                 // Analizer
-                settings_str += "Analizator: " + String(this.watcher.CurrentAnalizer) + '\n'
+                settings_str += "Analizator: " + String(this.marketBot.watcher.CurrentAnalizer) + '\n'
 
                 // Autobuy
-                settings_str += "Auto buy: " + String(this.isAutoBuy) + '\n'
+                settings_str += "Auto buy: " + String(this.marketBot.isAutoBuyEnabled) + '\n'
 
                 // Autosell
-                settings_str += "Auto sell: " + String(this.isAutoSell) + '\n'
+                settings_str += "Auto sell: " + String(false) + '\n'
 
                 // wallet
                 if (ctx.manager.isAdmin) {
-                        settings_str += "Wallet address:" + this.azyApi.connectedWallet()?.publicKey ?? "no" + " private key: " + this.azyApi.connectedWallet()?.privateKey ?? "no"
+                        settings_str +=
+                                "Wallet address:" + (this.marketBot.azyApi.connectedWallet()!.publicKey ?? "no") +
+                                " private key: " + (this.marketBot.azyApi.connectedWallet()!.privateKey ?? "no")
                 }
 
                 ctx.reply(settings_str)
@@ -250,15 +192,6 @@ const commands = (()=> {
 
                 ctx.reply("Not impl")
                 return
-                let data = "";
-                if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
-                }
-                if (data !== "") {
-                        await ctx.manager.setName(data);
-                } else {
-                        ctx.reply(new Error('data passed').message);
-                }
         }
 
         let setanalizer = <Command>async function(this: BotService, ctx: TextContext) {
@@ -269,7 +202,7 @@ const commands = (()=> {
                 if (data !== "") {
                         if (Object.keys(analizers).includes(data)) {
                                 // @ts-ignore
-                                await this.watcher.changeAnalizer(new analizers[data])
+                                await this.marketBot.watcher.changeAnalizer(new analizers[data])
                                 await ctx.reply("Analizer changed")
                         } else {
                                 await ctx.reply("Such analizers not exists")
@@ -288,7 +221,7 @@ const commands = (()=> {
         }
 
         let currentanalizer = <Command>async function(this: BotService, ctx: TextContext) {
-                await ctx.reply("Setting up with " + this.watcher.CurrentAnalizer)
+                await ctx.reply("Setting up with " + this.marketBot.watcher.CurrentAnalizer)
         }
 
         let mynft = <Command>async function(this: BotService, ctx: TextContext) {
@@ -296,15 +229,6 @@ const commands = (()=> {
 
                 ctx.reply("Not impl")
                 return
-                let data = "";
-                if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
-                }
-                if (data !== "") {
-                        await ctx.manager.setName(data);
-                } else {
-                        ctx.reply(new Error('data passed').message);
-                }
         }
 
         let nftallowedtosell = <Command>async function(this: BotService, ctx: TextContext) {
@@ -312,29 +236,20 @@ const commands = (()=> {
 
                 ctx.reply("Not impl")
                 return
-                let data = "";
-                if (ctx.message && ctx.message.text) {
-                        data = String(ctx.message.text.slice('setautobuy'.length+2)).trim();
-                }
-                if (data !== "") {
-                        await ctx.manager.setName(data);
-                } else {
-                        ctx.reply(new Error('data passed').message);
-                }
         }
 
         let toggle = <Command>async function(this: BotService, ctx: TextContext) {
-                if (this.watcher.isListening()) {
-                        await ctx.reply("Now speculant watcher terminated")
+                if (this.marketBot.watcher.Terminated) {
+                        await ctx.reply("Now speculant watcher is online")
                         try {
-                                this.watcher.stop()
+                                this.marketBot.watcher.start()
                         } catch(e: any) {
                                 await ctx.reply(e)
                         }
                 } else {
-                        await ctx.reply("Now speculant watcher is online")
+                        await ctx.reply("Now speculant watcher terminated")
                         try {
-                                this.watcher.listen()
+                                await this.marketBot.watcher.stop()
                         } catch(e: any) {
                                 await ctx.reply(e)
                         }
@@ -342,7 +257,7 @@ const commands = (()=> {
         }
 
         let isactive = <Command>async function(this: BotService, ctx: TextContext) {
-                await ctx.reply(this.watcher.isListening() ? "Active" : "Terminated")
+                await ctx.reply(!this.marketBot.watcher.Terminated ? "Active" : "Terminated")
         }
 
         status.description = "get current status";
@@ -371,9 +286,6 @@ const commands = (()=> {
 
         setautosell.description = "set auto buy property"
         setautosell.args = 'string - "true" or "false"'
-
-        setspeculationargesy.description = "set market analizator minimal income value"
-        setspeculationargesy.args = "float - number from 0 to 1, near to zero analizator will be choose items with less price difference, with near to one values will give opposite results"
 
         setwallet.description = "set wallet to pay and recive assets from market"
         setwallet.args = "string string - bsc account public and private keys"
@@ -431,7 +343,6 @@ const commands = (()=> {
 
                 setautobuy,
                 setautosell,
-                setspeculationargesy,
 
                 setwallet,
                 showwallet,
@@ -470,12 +381,12 @@ let actions = (() => {
                 let keyboard = tg.Markup.inlineKeyboard([ [
                         {   text: "Approve",
                                 callback_data: cb_data.approveManager + " " + id },
-                        {   text: "Reject",
-                                callback_data: cb_data.rejectManager + " " + id }
+                                {   text: "Reject",
+                                        callback_data: cb_data.rejectManager + " " + id }
                 ] ])
-                await ctx.telegram.sendMessage(Config().bot.admin_id, "Approve request from @" + ctx.from!.username,
-                        keyboard);
-                next();
+                await ctx.telegram.sendMessage(cfg.bot.admin_id, "Approve request from @" + ctx.from!.username,
+                                               keyboard);
+                                               next();
         }
 
         async function approvemanager(this: BotService, ctx: CqContext, next: () => void) {
@@ -510,98 +421,13 @@ const csAction = (() => {
         }
 })()
 
-class WatcherController extends EventEmitter {
-        private watcher: MarketWatcher
-
-        constructor() {
-                super()
-                this.watcher = new MarketWatcher()
-                this.watcher.on("buy", (item) => {
-                        this.emit("buy", item)
-                })
-        }
-
-        get CurrentAnalizer() {
-                return this.watcher.CurrentAnalizer
-        }
-
-        isListening() {
-                return !this.watcher.Terminated
-        }
-
-        listen() {
-                try {
-                        this.watcher.start()
-                } catch (e) {
-                        console.log(e)
-                }
-        }
-
-        async stop() {
-                await this.watcher.stop()
-        }
-
-        async addProxyWatcher() {
-                return 0
-        }
-
-        async removeProxyWatcher(id: number) {
-                id
-        }
-
-        async changeAnalizer(analizer: AnalizerInterface) {
-                await this.watcher.changeAnalizer(analizer)
-        }
-}
-
-// class 
-
 export class BotService extends EventEmitter {
         public readonly bot: tg.Telegraf<Context>;
-        readonly azyApi: MarketApi;
-        watcher: WatcherController
+        public readonly marketBot
 
         private running: boolean = false;
 
-        public onStop: () => void = () => {}
-
-        public buyFunction: (item: MarketItem) => Promise<void> = this.notifyBuyF
-
-        private async autoBuyF(item: MarketItem) {
-                for (const manager of Database.managers.documents) {
-                        await this.bot.telegram.sendMessage(manager.userId,
-                                "Creating buy order for item: https://go.amazy.io/item/"+item.tokenId+
-                                "\nsell id: " + item.sellId +
-                                "\nprice bnb: " + item.price +
-                                "\nprice eth: " + item.priceEth
-                        )
-                }
-                for (let tri = 0; tri < 3; tri++) {
-                        const res = await this.azyApi.createBuyOrder(item.sellId)
-                        if (res.status) {
-                                for (const manager of Database.managers.documents) {
-                                        await this.bot.telegram.sendMessage(manager.userId,
-                                                "Buy item success: https://go.amazy.io/item/"+item.tokenId+
-                                                "\nTx hash: " + res.transactionHash +
-                                                "\nprice bnb: " + item.price +
-                                                "\nprice eth: " + item.priceEth
-                                        )
-                                        await this.bot.telegram.sendSticker(manager.userId, this.stickers.happy)
-                                }
-                                break
-                        }
-                }
-        }
-
-        private async notifyBuyF(item: MarketItem) {
-                for (const manager of Database.managers.documents) {
-                        await this.bot.telegram.sendMessage(manager.userId,
-                                "Found buy order: https://go.amazy.io/item/"+item.tokenId+
-                                "\nprice bnb: " + item.price +
-                                "\nprice eth: " + item.priceEth
-                        )
-                }
-        }
+        public onStop: () => Promise<void> = async () => {}
 
         private readonly stickers = {
                 welcoming: "CAACAgIAAxkBAAEEh85iYatAqlMz81qfn7Dk303ummYrjwACGBEAAvE40EoZjSpXJ-H1-CQE",
@@ -611,16 +437,13 @@ export class BotService extends EventEmitter {
                 verySad:   "CAACAgIAAxkBAAEEh9RiYaueiAN4zPax481xTRns1EYlRQAC0hAAAtOfOEp18SByrhUeJiQE",
         }
 
-        private autobuy = false
-
         constructor() {
                 super();
-                this.azyApi = new MarketApi()
-                this.bot = new tg.Telegraf(Config().bot.token);
-                this.watcher = new WatcherController()
+                this.marketBot = new Bot()
+                this.bot = new tg.Telegraf(cfg.bot.token);
 
-                this.watcher.on("buy", async (item: MarketItem) => {
-                        await this.buyFunction(item)
+                this.marketBot.on("buy", (s: string) => {
+                        s
                 })
 
                 this.bot.use(async (ctx, next) => {
@@ -636,22 +459,22 @@ export class BotService extends EventEmitter {
                         }
                         console.log(cb_data.approveRequest + " " + ctx.from!.id)
                         await ctx.replyWithMarkdown("Welcome to amazy-spec bot. To start using bot you need to be aproved by bot administrator.\n" +
-                                "Click on button for send approve request",
-                                tg.Markup.inlineKeyboard([ [ { text: "Send", callback_data: cb_data.approveRequest + " " + ctx.from!.id  }, ] ]));
+                                                    "Click on button for send approve request",
+                        tg.Markup.inlineKeyboard([ [ { text: "Send", callback_data: cb_data.approveRequest + " " + ctx.from!.id  }, ] ]));
                 })
 
                 // this.bot.on('callback_query', ())
 
                 Object.values(commands).forEach(cmd =>
-                        this.bot.command(cmd.name, (ctx) => cmd.call(this,ctx))
-                )
+                                                this.bot.command(cmd.name, (ctx) => cmd.call(this,ctx))
+                                               )
 
-                this.bot.action(RegExp(cb_data.approveRequest + "*"), (ctx, next) => actions.approverequest.call(this, ctx, next));
-                this.bot.action(RegExp(cb_data.approveManager + "*"), (ctx, next) => actions.approvemanager.call(this, ctx, next));
-                this.bot.action(RegExp(cb_data.rejectManager + "*"),  (ctx, next) => actions.rejectmanager.call(this, ctx, next));
+                                               this.bot.action(RegExp(cb_data.approveRequest + "*"), (ctx, next) => actions.approverequest.call(this, ctx, next));
+                                               this.bot.action(RegExp(cb_data.approveManager + "*"), (ctx, next) => actions.approvemanager.call(this, ctx, next));
+                                               this.bot.action(RegExp(cb_data.rejectManager + "*"),  (ctx, next) => actions.rejectmanager.call(this, ctx, next));
 
-                // Its muts be declared after ALL commands!
-                // this.bot.on('text', actions.text.bind(this));
+                                               // Its muts be declared after ALL commands!
+                                               // this.bot.on('text', actions.text.bind(this));
         }
 
         deconstructor() {
@@ -668,36 +491,19 @@ export class BotService extends EventEmitter {
                 )
         }
 
-        setAutoBuy(auto: boolean) {
-                this.autobuy = auto
-                if (auto) {
-                        this.buyFunction = this.autoBuyF
-                } else {
-                        this.buyFunction = this.notifyBuyF
-                }
-        }
-
-        get isAutoBuy() {
-                return this.autobuy
-        }
-
-        get isAutoSell() {
-                return "Not implemented"
-        }
-
         async start() {
                 if (this.running) {
                         return;
                 }
                 try {
                         let adminExisted = true;
-                        let admin = await Database.managers.findOne({ userId: Config().bot.admin_id })
+                        let admin = await Database.managers.findOne({ userId: cfg.bot.admin_id })
                         if (!admin) {
                                 adminExisted = false;
                                 Database.managers.insertOne({
                                         isAdmin: true,
                                         name: "Admin",
-                                        userId: Config().bot.admin_id,
+                                        userId: cfg.bot.admin_id,
                                         online: false,
                                         avatar: (await Database.files.getDefaultAvatar()).file_id
                                 })
@@ -712,6 +518,7 @@ export class BotService extends EventEmitter {
                                 // }
                         }
                         console.log("Telegram-bot service started");
+                        this.marketBot.init()
                 } catch(e) {
                         throw e;
                 }
@@ -728,14 +535,12 @@ export class BotService extends EventEmitter {
                 //         // await this.bot.telegram.sendSticker(m.userId, this.stickers.verySad);
                 // }
                 this.bot.stop();
-                if (this.watcher.isListening()) {
-                        await this.watcher.stop()
-                }
+                await this.marketBot.Dispose()
                 await this.onStop();
         }
 
         chooseMarkup(accept: string, decline: string) {
                 return tg.Markup.inlineKeyboard([ tg.Markup.button.callback("Accept", accept),
-                        tg.Markup.button.callback("Decline", decline) ])
+                                                tg.Markup.button.callback("Decline", decline) ])
         }
 }

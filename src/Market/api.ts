@@ -1,27 +1,33 @@
 import axios from 'axios'
-import * as crypto from 'crypto'
 import cheerio from 'cheerio'
-import { MarketItem, MarketSearchParams, MarketSearchRes } from "./../Types/Market.js"
+import { MarketSearchParams, MarketSearchRes } from "./../Types/Market.js"
 import { Sneakers } from './../Types/Sneakers.js'
 import _web3 from 'web3'
 import * as qs from 'qs'
 import * as fs from 'fs'
+import Path from 'path'
+import { log } from './../lib/logger/index.js'
 
 const bsc_rpc = "https://bsc-dataseed.binance.org/"
 const web3 = new _web3(
         new _web3.providers.HttpProvider(bsc_rpc)
 )
 const amazy_contract_address = web3.utils.toChecksumAddress('0x70624F31d403b5a5505b9127663674fc1195C383')
-const method_buy = '0xd96a094a'
+const abi = JSON.parse(
+        fs.readFileSync(
+                Path.join("abi", amazy_contract_address+".json")
+        ).toString()
+)
 
 export class MarketApi {
-        private contract?: string
         private wallet?: {
                 publicKey: string
                 privateKey: string
         }
+        private contract
 
         constructor(private api_url: URL = new URL("https://rest.amazy.io/marketplace")) {
+                this.contract = new web3.eth.Contract(abi, amazy_contract_address)
         }
 
         connectedWallet() {
@@ -33,8 +39,8 @@ export class MarketApi {
                         privateKey: privateKey,
                         publicKey: publicKey
                 }
-                // try
-                console.log("Balance:", await web3.eth.getBalance(this.wallet.publicKey))
+                web3.eth.accounts.wallet.add(this.wallet.privateKey)
+                log.echo("Balance:", await web3.eth.getBalance(this.wallet.publicKey))
                 return true
         }
 
@@ -47,34 +53,12 @@ export class MarketApi {
                         throw "No wallet connected"
                 }
 
-                const hex_sale_id = asset.toString(16)
-                let order_data = method_buy + hex_sale_id
-                if (order_data.length < 74) {
-                        order_data = method_buy + '0'.repeat(74-method_buy.length-hex_sale_id.length) + hex_sale_id
-                }
+                log.echo("Buing", asset)
 
-                const tx = {
-                        "from": this.wallet.publicKey,
-                        "to": amazy_contract_address,
-                        "nonce": await web3.eth.getTransactionCount(this.wallet.publicKey),
-                        "gas": 310000,
-                        "gasPrice": web3.utils.toWei('10', 'gwei'),
-                        "chainId": 56,
-                        "data": order_data
-                }
-
-                let tx_res: any & { success: boolean }
-                try {
-                        let signed_tx = await web3.eth.accounts.signTransaction(tx, this.wallet.privateKey)
-                        if (signed_tx.rawTransaction) {
-                                tx_res = await web3.eth.sendSignedTransaction(signed_tx.rawTransaction)
-                        } else {
-                                throw "No raw transaction after signing"
-                        }
-                } catch (e) {
-                        console.error(e)
-                        tx_res = { success: false }
-                }
+                const tx_res = await this.contract.methods.buy(asset).send({
+                        from: this.wallet.publicKey,
+                        gasPrice: await web3.eth.getGasPrice()
+                })
 
                 return tx_res
         }

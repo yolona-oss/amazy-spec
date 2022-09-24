@@ -9,7 +9,5 @@ export interface WatcherOpts {
 }
 
 export interface MarketWatcherOpts extends WatcherOpts {
-        autoSell: boolean
-        autoBuy: boolean
         argession: number
 }
