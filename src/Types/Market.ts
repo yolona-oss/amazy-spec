@@ -24,7 +24,7 @@ export interface MarketItem {
                 Parents: number[]
         }
         _id: string
-        Types: "box" | "sneakers"
+        type: "box" | "sneakers"
         name: "Common Box" | "Uncommon Box" | "Rare Box" | "Legendary Box" |
                 "Common Ranger Sneakers" |
                 "Common Hiker Sneakers" |
@@ -62,6 +62,7 @@ export interface MarketItem {
         currency: "BNB" | "ETH"
         price: number
         sellId: number
+        genesis: boolean
 }
 
 export interface MarketSearchRes {

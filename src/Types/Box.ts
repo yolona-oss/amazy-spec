@@ -7,6 +7,6 @@ export interface Box extends MarketItem {
                         "Box"
                 Parents: number[]
         }
-        Types: "box"
+        type: "box"
         name: "Common Box" | "Uncommon Box" | "Rare Box" | "Legendary Box"
 }

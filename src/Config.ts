@@ -21,9 +21,13 @@ const SneakersAnalizerSettingsSign = object({
         performance_grow_mult: number()
 })
 
+const MintPropSign = object({
+        type: string()
+})
+
 const BoxAnalizerSettingsSign = object({
-        mint1: string(),
-        mint2: string(),
+        mint1: MintPropSign,
+        mint2: MintPropSign,
         max_price: number(),
         rarity: optional(string()),
 })

@@ -76,17 +76,15 @@ export class MarketWatcher extends EventEmitter implements Watcher {
                         for (const nft of analized) {
                                 if (
                                         nft.score >= this.opts!.argession &&
-                                        !this.notifiedItems.includes(nft.item.tokenId)
+                                        !this.notifiedItems.includes(nft.item.sellId)
                                 ) {
-                                        this.notifiedItems.push(nft.item.tokenId)
+                                        this.notifiedItems.push(nft.item.sellId)
                                         this.emit("buy", nft.item)
                                 }
                         }
                 } catch (e) {
                         log.error("Cannot analize:", e)
                 }
-
-                // parse solded nfts and send nodity to tg
 
                 if (this.terminated) {
                         this.emit("terminated")

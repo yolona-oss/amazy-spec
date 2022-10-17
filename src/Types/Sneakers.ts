@@ -39,6 +39,6 @@ export interface Sneakers extends MarketItem {
                 Skin: string
                 Parents: number[]
         }
-        Types: "sneakers"
+        type: "sneakers"
         name: SneakersName
 }

@@ -1,8 +1,12 @@
-import { appendFileSync } from 'fs'
+import { appendFileSync, existsSync, mkdirSync } from 'fs'
 import chalk from 'chalk'
 
 function logTime() {
         return '[' + new Date().toLocaleTimeString() + ']'
+}
+
+if (!existsSync("./.log")) {
+        mkdirSync("./.log")
 }
 
 const logFileName = "./.log" + "/log_" + new Date().toLocaleDateString().replaceAll('/', '') + "_" + new Date().toLocaleTimeString("ru").replaceAll(":", '')

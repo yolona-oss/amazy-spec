@@ -22,15 +22,14 @@ const lockFilePath = "./.lock.pid";
         }
 
         try {
+                process.once("beforeExit", () => {
+                        fs.unlinkSync(lockFilePath);
+                })
 
                 let server = new BotService();
 
                 process.on("SIGINT", async () => await server.stop());
                 process.on("SIGTERM", async () => await server.stop());
-
-                server.onStop = async () => {
-                        fs.unlinkSync(lockFilePath);
-                }
 
                 await server.start()
                         .then(() => {
@@ -42,9 +41,6 @@ const lockFilePath = "./.lock.pid";
                         }).catch((e) => {
                                 throw "Error occured while service startup: " + e;
                         })
-                server.onStop = async () => {
-                        fs.unlinkSync(lockFilePath);
-                }
         } catch (e) {
                 console.error("Terminating:", e);
                 fs.unlinkSync(lockFilePath);

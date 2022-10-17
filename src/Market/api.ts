@@ -2,6 +2,7 @@ import axios from 'axios'
 import cheerio from 'cheerio'
 import { MarketSearchParams, MarketSearchRes } from "./../Types/Market.js"
 import { Sneakers } from './../Types/Sneakers.js'
+import { MarketItem } from './../Types/Market.js'
 import _web3 from 'web3'
 import * as qs from 'qs'
 import * as fs from 'fs'
@@ -9,6 +10,7 @@ import Path from 'path'
 import { log } from './../lib/logger/index.js'
 
 const bsc_rpc = "https://bsc-dataseed.binance.org/"
+log.echo("Connecting to bsc network")
 const web3 = new _web3(
         new _web3.providers.HttpProvider(bsc_rpc)
 )
@@ -20,14 +22,18 @@ const abi = JSON.parse(
 )
 
 export class MarketApi {
-        private wallet?: {
-                publicKey: string
-                privateKey: string
+        private wallet: {
+                publicKey: string | null
+                privateKey: string | null
         }
         private contract
 
         constructor(private api_url: URL = new URL("https://rest.amazy.io/marketplace")) {
                 this.contract = new web3.eth.Contract(abi, amazy_contract_address)
+                this.wallet = {
+                        publicKey: null,
+                        privateKey: null
+                }
         }
 
         connectedWallet() {
@@ -39,17 +45,25 @@ export class MarketApi {
                         privateKey: privateKey,
                         publicKey: publicKey
                 }
-                web3.eth.accounts.wallet.add(this.wallet.privateKey)
-                log.echo("Balance:", await web3.eth.getBalance(this.wallet.publicKey))
+                web3.eth.accounts.wallet.add(privateKey)
+                log.echo("Balance:", await web3.eth.getBalance(publicKey))
                 return true
         }
 
+        async getItemDetails(tokenId: number): Promise<MarketItem> {
+                let ret = await axios.get("https://rest.amazy.io/item/" + tokenId)
+                if (ret.status != 200) {
+                        throw "Cannot fetch item details"
+                } else {
+                        return ret.data
+                }
+        }
 
         // async createSellOrder(asset: number, price: number): Promise<boolean> {
         // }
 
         async createBuyOrder(asset: number) {
-                if (!this.wallet) {
+                if (!this.wallet.publicKey || !this.wallet.privateKey) {
                         throw "No wallet connected"
                 }
 
@@ -64,18 +78,50 @@ export class MarketApi {
         }
 
         async fetchNFT(_param: Partial<MarketSearchParams>): Promise<MarketSearchRes> {
-                const defaulted = {
+                let defaulted = {
                         levelMax: 0,
                         levelMin: 0,
                         mintMax:  0,
                         mintMin:  0,
                         page:     0,
                         perPage:  0,
-                        type:     "box",
+                        type:     "sneakers",
                         rarity:   "common",
                         valueMax: 0,
                         valueMin: 0,
                 }
+
+                if (_param.type == "box") {
+                        // @ts-ignore
+                        delete defaulted.levelMax
+                        // @ts-ignore
+                        delete defaulted.levelMin
+                        // @ts-ignore
+                        delete defaulted.mintMax
+                        // @ts-ignore
+                        delete defaulted.mintMin
+
+                        if (_param.levelMax) {
+                                delete _param.levelMax
+                        }
+
+                        if (_param.levelMin) {
+                                delete _param.levelMin
+                        }
+
+                        if (_param.sneakersType) {
+                                delete _param.sneakersType
+                        }
+
+                        if (_param.mintMax) {
+                                delete _param.mintMax
+                        }
+
+                        if (_param.mintMin) {
+                                delete _param.mintMin
+                        }
+                }
+
                 const params: MarketSearchParams = {
                         ...defaulted,
                         ..._param
@@ -89,12 +135,12 @@ export class MarketApi {
                                 }
                         })
                 } catch (e) {
-                        console.log(e)
+                        log.error(e)
                         throw "Cannot get data from: " + this.api_url + "\n" + e
                 }
                 if (res.status != 200) {
-                        console.log(res.statusText)
-                        throw "Cannot get data from: " + this.api_url
+                        log.error("Cannot get data from: " + this.api_url + " " + res.statusText)
+                        throw "Cannot get data from: " + this.api_url + " " + res.statusText
                 }
                 return res.data
         }

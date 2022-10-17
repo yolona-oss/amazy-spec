@@ -112,8 +112,8 @@ const commands = (()=> {
 
         let showwallet = <Command>async function(this: BotService, ctx: TextContext) {
                 if (ctx.manager.isAdmin) {
-                        ctx.reply("Wallet address:" + (this.marketBot.azyApi.connectedWallet()!.publicKey ?? "no") +
-                                  " private key: " + (this.marketBot.azyApi.connectedWallet()!.privateKey ?? "no"))
+                        ctx.reply("Wallet address:" + (this.marketBot.azyApi.connectedWallet().publicKey ?? "no") + "\n" +
+                                  " private key: " + (this.marketBot.azyApi.connectedWallet().privateKey ?? "no"))
                         return
                 }
                 // TODO unify this reply
@@ -179,9 +179,10 @@ const commands = (()=> {
 
                 // wallet
                 if (ctx.manager.isAdmin) {
+                        const wallet = this.marketBot.azyApi.connectedWallet()
                         settings_str +=
-                                "Wallet address:" + (this.marketBot.azyApi.connectedWallet()!.publicKey ?? "no") +
-                                " private key: " + (this.marketBot.azyApi.connectedWallet()!.privateKey ?? "no")
+                                "Wallet address:" + (wallet.publicKey ?? "no") + "\n" + 
+                                " private key: " + (wallet.privateKey ?? "no")
                 }
 
                 ctx.reply(settings_str)
@@ -378,12 +379,18 @@ let actions = (() => {
 
         async function approverequest(this: BotService, ctx: CqContext, next: () => void) {
                 let id = ctx.match.input.slice(cb_data.approveRequest.length);
-                let keyboard = tg.Markup.inlineKeyboard([ [
-                        {   text: "Approve",
-                                callback_data: cb_data.approveManager + " " + id },
-                                {   text: "Reject",
-                                        callback_data: cb_data.rejectManager + " " + id }
-                ] ])
+                let keyboard = tg.Markup.inlineKeyboard([
+                        [
+                                {
+                                        text: "Approve",
+                                        callback_data: cb_data.approveManager + " " + id
+                                },
+                                {
+                                        text: "Reject",
+                                        callback_data: cb_data.rejectManager + " " + id
+                                }
+                        ]
+                ])
                 await ctx.telegram.sendMessage(cfg.bot.admin_id, "Approve request from @" + ctx.from!.username,
                                                keyboard);
                                                next();
@@ -427,7 +434,7 @@ export class BotService extends EventEmitter {
 
         private running: boolean = false;
 
-        public onStop: () => Promise<void> = async () => {}
+        public onStop: () => void = () => {}
 
         private readonly stickers = {
                 welcoming: "CAACAgIAAxkBAAEEh85iYatAqlMz81qfn7Dk303ummYrjwACGBEAAvE40EoZjSpXJ-H1-CQE",
@@ -442,8 +449,10 @@ export class BotService extends EventEmitter {
                 this.marketBot = new Bot()
                 this.bot = new tg.Telegraf(cfg.bot.token);
 
-                this.marketBot.on("buy", (s: string) => {
-                        s
+                this.marketBot.on("buy", async (s: string) => {
+                        for (const m of Database.managers.documents) {
+                                await this.bot.telegram.sendMessage(m.userId, s)
+                        }
                 })
 
                 this.bot.use(async (ctx, next) => {
@@ -536,7 +545,7 @@ export class BotService extends EventEmitter {
                 // }
                 this.bot.stop();
                 await this.marketBot.Dispose()
-                await this.onStop();
+                this.onStop();
         }
 
         chooseMarkup(accept: string, decline: string) {
